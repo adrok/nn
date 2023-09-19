@@ -4,7 +4,6 @@ import torchvision.transforms as transforms
 from torch.utils.data import Dataset, DataLoader
 import os
 from torch import nn
-import torch.nn.functional as F
 import torch.optim as optim
 import cv2
 import time
@@ -36,7 +35,7 @@ class FramesDataset(Dataset):
                             transforms.ToTensor(),
                         ])
 
-                        blured = cv2.blur(frame, (100, 100))
+                        blured = cv2.blur(frame, (50, 50))
 
                         self.frames.append(
                             [t(frame), t(blured)]
@@ -62,12 +61,15 @@ class FramesDataset(Dataset):
 class Net(nn.Module):
     def __init__(self):
         super().__init__()
-        self.conv1 = nn.Conv2d(3, 64, 6, padding=2)
+        self.conv1 = nn.Sequential(
+            nn.Conv2d(3, 64, 6, padding=2),
+            nn.ReLU(True)
+        )
         # self.conv2 = nn.Conv2d(64, 32, 1, padding=2)
         self.conv3 = nn.Conv2d(64, 3, 4, padding=2)
 
     def forward(self, x):
-        x = F.relu(self.conv1(x))
+        x = self.conv1(x)
         # x = F.relu(self.conv2(x))
         x = self.conv3(x)
 
@@ -85,6 +87,7 @@ train_loader = DataLoader(train_dataset, batch_size=4, shuffle=False, num_worker
 val_loader = DataLoader(val_dataset, batch_size=4, shuffle=True, num_workers=0)
 
 net = Net()
+net.to(device)
 
 print(net)
 total_params = sum(p.numel() for p in net.parameters())
@@ -104,8 +107,12 @@ for epoch in range(50):
     train_loss = 0.0
     ts = time.time()
 
+
     for i, data in enumerate(train_loader, 0):
         (frames_blured, frames_original) = data
+
+        frames_blured = frames_blured.to(device)
+        frames_original = frames_original.to(device)
 
         optimizer.zero_grad()
 
@@ -122,14 +129,16 @@ for epoch in range(50):
             print(f'train: [{epoch + 1:2d}, {i + 1:3d}] loss: {train_loss / 100:.5f} took {(time.time() - ts):.2f}s')
             train_loss = 0.0
 
+        if i == len(train_loader) - 1:
             img = frames_blured.cpu().data
-            torchvision.utils.save_image(img, f"./outputs/{epoch}_{i}_input.jpg")
+            torchvision.utils.save_image(img, f"./outputs/{epoch}_input.jpg")
 
             img = outputs.cpu().data
-            torchvision.utils.save_image(img, f"./outputs/{epoch}_{i}_output.png")
+            torchvision.utils.save_image(img, f"./outputs/{epoch}_output.png")
 
             img = frames_original.cpu().data
-            torchvision.utils.save_image(img, f"./outputs/{epoch}_{i}_original.jpg")
+            torchvision.utils.save_image(img, f"./outputs/{epoch}_original.jpg")
+
 
             # scheduler.step(train_loss)
 
