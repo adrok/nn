@@ -3,7 +3,8 @@ import torchvision
 from torch.utils.data import Dataset, DataLoader
 from torch import nn
 import torch.optim as optim
-import time
+from torchsummary import summary
+from tqdm import tqdm
 
 from dataset import FramesDataset
 from model import Model
@@ -12,23 +13,25 @@ device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 ds = FramesDataset(root_dir='./data/frame/')
 
-train_len = len(ds) - 10
+train_len = len(ds) - 100
 val_len = len(ds) - train_len
 
 train_dataset, val_dataset = torch.utils.data.random_split(ds, [train_len, val_len])
 
-train_loader = DataLoader(train_dataset, batch_size=4, shuffle=False, num_workers=0)
-val_loader = DataLoader(val_dataset, batch_size=4, shuffle=False, num_workers=0)
+train_loader = DataLoader(train_dataset, batch_size=20, shuffle=False, num_workers=5)
+val_loader = DataLoader(val_dataset, batch_size=10, shuffle=False, num_workers=0)
 
 model = Model()
 model.to(device)
 
 print(model)
-total_params = sum(p.numel() for p in model.parameters())
-print(f"Number of parameters: {total_params}")
+# total_params = sum(p.numel() for p in model.parameters())
+# print(f"Number of parameters: {total_params}")
+
+summary(model, input_size=(3, 152, 152))
 
 criterion = nn.MSELoss()
-optimizer = optim.Adam(model.parameters(), lr=0.01)
+optimizer = optim.Adam(model.parameters(), lr=0.001)
 scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
     optimizer,
     mode='min',
@@ -37,12 +40,12 @@ scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
     verbose=True
 )
 
+train_losses = []
 for epoch in range(50):
     train_loss = 0.0
-    ts = time.time()
 
-    for i, data in enumerate(train_loader, 0):
-        (original, inputs) = data
+    for data in tqdm(train_loader):
+        original, inputs = data
 
         original = original.to(device)
         inputs = inputs.to(device)
@@ -57,22 +60,33 @@ for epoch in range(50):
 
         optimizer.step()
 
-        train_loss += loss.item()
-        if i % 10 == 9:
-            print(f'train: [{epoch + 1:2d}, {i + 1:3d}] loss: {train_loss / 10:.5f} took {(time.time() - ts):.2f}s')
-            train_loss = 0.0
+        train_loss += loss.item() * inputs.size(0)
 
-        if i == len(train_loader) - 1:
+    train_loss = train_loss / len(train_loader)
+    train_losses.append(train_loss)
+    print('Epoch: {} \tTraining Loss: {:.6f}'.format(epoch, train_loss))
+
+    # save
+    with torch.no_grad():
+        model.eval()
+        for _, data in list(enumerate(val_loader))[:10]:
+            original, inputs = data
+
+            inputs = inputs.to(device)
+            original = original.to(device)
+
+            outputs = model(inputs)
+
             img = torch.cat((inputs, outputs, original), dim=0).cpu().data
-            torchvision.utils.save_image(img, f"./outputs/{epoch}_input.jpg")
+            torchvision.utils.save_image(img, f"./outputs/{epoch}.jpg", nrow=10)
 
-            # img = outputs.cpu().data
-            # torchvision.utils.save_image(img, f"./outputs/{epoch}_output.png")
-            #
-            # img = high_resolution.cpu().data
-            # torchvision.utils.save_image(img, f"./outputs/{epoch}_original.jpg")
+    # img = outputs.cpu().data
+    # torchvision.utils.save_image(img, f"./outputs/{epoch}_output.png")
+    #
+    # img = high_resolution.cpu().data
+    # torchvision.utils.save_image(img, f"./outputs/{epoch}_original.jpg")
 
-            # scheduler.step(train_loss)
+    # scheduler.step(train_loss)
 
     # with torch.no_grad():
     #     val_loss = 0.0

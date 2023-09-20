@@ -24,24 +24,8 @@ class FramesDataset(Dataset):
                 name, ext = os.path.splitext(os.path.basename(f))
 
                 path = os.path.join(d, f'{int(name)}{ext}')
-                original = cv2.imread(path)
 
-                t = transforms.Compose([
-                    transforms.ToPILImage(),
-                    transforms.Resize((256, 256)),
-                    transforms.ToTensor(),
-                ])
-
-                t_low = transforms.Compose([
-                    transforms.ToPILImage(),
-                    transforms.Resize((256, 256)),
-                    transforms.Grayscale(3),
-                    transforms.ToTensor(),
-                ])
-
-                self.frames.append(
-                    [t(original), t_low(original)]
-                )
+                self.frames.append(path)
 
     def __len__(self):
         return len(self.frames)
@@ -50,4 +34,21 @@ class FramesDataset(Dataset):
         if torch.is_tensor(idx):
             idx = idx.tolist()
 
-        return self.frames[idx]
+        path = self.frames[idx]
+
+        original = cv2.imread(path)
+
+        t = transforms.Compose([
+            transforms.ToPILImage(),
+            transforms.Resize((152, 152)),
+                transforms.ToTensor(),
+        ])
+
+        t_low = transforms.Compose([
+            transforms.ToPILImage(),
+            transforms.Resize((152, 152)),
+            transforms.Grayscale(3),
+                transforms.ToTensor(),
+        ])
+
+        return t(original), t_low(original)
