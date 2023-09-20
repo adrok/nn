@@ -42,16 +42,16 @@ for epoch in range(50):
     ts = time.time()
 
     for i, data in enumerate(train_loader, 0):
-        (high_resolution, low_resolution) = data
+        (original, inputs) = data
 
-        high_resolution = high_resolution.to(device)
-        low_resolution = low_resolution.to(device)
+        original = original.to(device)
+        inputs = inputs.to(device)
 
         optimizer.zero_grad()
 
-        outputs = model(low_resolution)
+        outputs = model(inputs)
 
-        loss = criterion(outputs, high_resolution)
+        loss = criterion(outputs, original)
 
         loss.backward()
 
@@ -63,14 +63,14 @@ for epoch in range(50):
             train_loss = 0.0
 
         if i == len(train_loader) - 1:
-            img = low_resolution.cpu().data
+            img = torch.cat((inputs, outputs, original), dim=0).cpu().data
             torchvision.utils.save_image(img, f"./outputs/{epoch}_input.jpg")
 
-            img = outputs.cpu().data
-            torchvision.utils.save_image(img, f"./outputs/{epoch}_output.png")
-
-            img = high_resolution.cpu().data
-            torchvision.utils.save_image(img, f"./outputs/{epoch}_original.jpg")
+            # img = outputs.cpu().data
+            # torchvision.utils.save_image(img, f"./outputs/{epoch}_output.png")
+            #
+            # img = high_resolution.cpu().data
+            # torchvision.utils.save_image(img, f"./outputs/{epoch}_original.jpg")
 
             # scheduler.step(train_loss)
 
