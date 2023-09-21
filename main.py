@@ -18,7 +18,7 @@ val_len = len(ds) - train_len
 
 train_dataset, val_dataset = torch.utils.data.random_split(ds, [train_len, val_len])
 
-train_loader = DataLoader(train_dataset, batch_size=20, shuffle=False, num_workers=5)
+train_loader = DataLoader(train_dataset, batch_size=20, shuffle=False, num_workers=0)
 val_loader = DataLoader(val_dataset, batch_size=10, shuffle=False, num_workers=0)
 
 model = Model()

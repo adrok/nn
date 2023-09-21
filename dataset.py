@@ -2,8 +2,7 @@ import torch
 import torchvision.transforms as transforms
 from torch.utils.data import Dataset
 import os
-import cv2
-
+import torchvision
 
 class FramesDataset(Dataset):
     def __init__(self, root_dir):
@@ -36,19 +35,19 @@ class FramesDataset(Dataset):
 
         path = self.frames[idx]
 
-        original = cv2.imread(path)
+        original = torchvision.io.read_image(path)
 
         t = transforms.Compose([
             transforms.ToPILImage(),
             transforms.Resize((152, 152)),
-                transforms.ToTensor(),
+            transforms.ToTensor(),
         ])
 
         t_low = transforms.Compose([
             transforms.ToPILImage(),
             transforms.Resize((152, 152)),
             transforms.Grayscale(3),
-                transforms.ToTensor(),
+            transforms.ToTensor(),
         ])
 
         return t(original), t_low(original)
