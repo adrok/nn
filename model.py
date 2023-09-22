@@ -27,6 +27,7 @@ class Model(nn.Module):
         x2 = F.relu(self.conv2(x1))
         x3 = F.relu(self.conv3(x2))
         x4 = F.relu(self.conv4(x3))
+
         xd = F.relu(self.t_conv1(x4))
         xd = torch.cat((xd, x3), dim=1)
         xd = self.dropout(xd)
@@ -39,6 +40,7 @@ class Model(nn.Module):
         xd = F.relu(self.t_conv4(xd))
         xd = torch.cat((xd, x), dim=1)
         x_out = F.relu(self.converge(xd))
+
         return x_out
 
     # def __init__(self):

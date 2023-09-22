@@ -10,7 +10,7 @@ def load_img(path):
 
     t = transforms.Compose([
         transforms.ToPILImage(),
-        transforms.Resize((152*10, 152*10)),
+        transforms.CenterCrop((152*10, 152*15)),
         transforms.Grayscale(3),
         transforms.ToTensor(),
     ])
