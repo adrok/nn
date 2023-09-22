@@ -4,6 +4,20 @@ from torch.utils.data import Dataset
 import os
 import torchvision
 
+
+def load_img(path):
+    img = torchvision.io.read_image(path)
+
+    t = transforms.Compose([
+        transforms.ToPILImage(),
+        transforms.Resize((152*10, 152*10)),
+        transforms.Grayscale(3),
+        transforms.ToTensor(),
+    ])
+
+    return t(img)
+
+
 class FramesDataset(Dataset):
     def __init__(self, root_dir):
         self.root_dir = root_dir

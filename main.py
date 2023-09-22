@@ -6,7 +6,7 @@ import torch.optim as optim
 from torchsummary import summary
 from tqdm import tqdm
 
-from dataset import FramesDataset
+from dataset import FramesDataset, load_img
 from model import Model
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
@@ -28,7 +28,7 @@ print(model)
 # total_params = sum(p.numel() for p in model.parameters())
 # print(f"Number of parameters: {total_params}")
 
-summary(model, input_size=(3, 152, 152))
+summary(model, input_size=(3, 1024, 1024))
 
 criterion = nn.MSELoss()
 optimizer = optim.Adam(model.parameters(), lr=0.001)
@@ -79,6 +79,13 @@ for epoch in range(50):
 
             img = torch.cat((inputs, outputs, original), dim=0).cpu().data
             torchvision.utils.save_image(img, f"./outputs/{epoch}.jpg", nrow=10)
+
+        img = load_img("./data/img.png")
+        img = img.to(device)
+        img = img.unsqueeze(0)
+        outputs = model(img)
+        to_save = torch.cat((img, outputs), dim=0).cpu().data
+        torchvision.utils.save_image(to_save, f"./outputs/{epoch}_x.jpg")
 
     # img = outputs.cpu().data
     # torchvision.utils.save_image(img, f"./outputs/{epoch}_output.png")
